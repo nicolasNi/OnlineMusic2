@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:orientation="vertical"
+    tools:context="com.lt.nexthud.onlinemusic2.MainActivity">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="49dp"
+        android:layout_marginLeft="16dp"
+        tools:ignore="RtlHardcoded" >
+
+        <EditText
+            android:id="@+id/edt_search"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@null"
+            android:drawableLeft="@mipmap/icon_search_orange"
+            android:drawablePadding="8dp"
+            android:hint="搜索歌曲，歌手等"
+            android:singleLine="true"
+            android:textColor="@color/black"
+            android:textSize="@dimen/txt_size_navigation"
+            tools:ignore="RtlCompat,HardcodedText,RtlHardcoded" />
+
+        <Button
+            android:id="@+id/bt_online_search"
+            android:layout_width="60dp"
+            android:layout_height="49dp"
+            android:layout_alignParentRight="true"
+            android:background="@drawable/selector_ltem"
+            android:text="搜索"
+            android:textColor="@color/main_orange"
+            android:textSize="@dimen/txt_size_navigation"
+            tools:ignore="RtlHardcoded,HardcodedText" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:layout_below="@+id/edt_search"
+            android:layout_marginRight="16dp"
+            android:background="@color/main_orange"
+            tools:ignore="RtlHardcoded" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="49dp"
+        android:gravity="center_vertical|center_horizontal">
+
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:srcCompat="@android:drawable/ic_media_previous"
+            android:id="@+id/imageButton"
+            android:layout_alignParentTop="true"
+            android:layout_toLeftOf="@+id/imageButton2"
+            android:layout_marginEnd="6dp"
+            android:onClick="click"
+            />
+
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:srcCompat="@android:drawable/ic_media_play"
+            android:layout_toLeftOf="@+id/button"
+            android:layout_marginEnd="3dp"
+            android:id="@+id/imageButton2"
+            android:onClick="click"/>
+
+        <Button
+            android:text="Button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_centerInParent="true"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:id="@+id/button"
+            android:visibility="invisible"/>
+
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:srcCompat="@android:drawable/ic_media_pause"
+            android:layout_toRightOf="@+id/button"
+            android:layout_marginStart="3dp"
+            android:id="@+id/imageButton3"
+            android:onClick="click"/>
+
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:srcCompat="@android:drawable/ic_media_next"
+            android:layout_toRightOf="@+id/imageButton3"
+            android:layout_marginStart="6dp"
+            android:id="@+id/imageButton4"
+            android:onClick="click"/>
+
+
+
+    </RelativeLayout>
+
+
+    <ListView
+        android:id="@+id/lv_search_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:divider="@color/item_focuse"
+        android:dividerHeight="0.1dp" >
+    </ListView>
+</LinearLayout>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/list_padding"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/selector_ltem">
+
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="44dp"
+        android:layout_marginLeft="4dp"
+        tools:ignore="RtlHardcoded" >
+
+        <TextView
+            android:id="@+id/tv_search_list_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:text="随他吧"
+            android:textColor="@color/black"
+            android:textSize="@dimen/txt_size_title"
+            tools:ignore="HardcodedText" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:orientation="horizontal" >
+
+            <TextView
+                android:layout_width="24dp"
+                android:layout_height="12dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginLeft="4dp"
+                android:background="@color/main_orange"
+                android:gravity="center"
+                android:singleLine="true"
+                android:text="H Q"
+                android:textColor="@color/white"
+                android:textSize="8sp"
+                android:textStyle="bold"
+                tools:ignore="HardcodedText,SmallSp" />
+
+            <TextView
+                android:id="@+id/tv_search_list_airtist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="4dp"
+                android:gravity="center"
+                android:singleLine="true"
+                android:text="胡维纳"
+                android:textColor="@color/gray_deep"
+                android:textSize="14sp"
+                tools:ignore="HardcodedText" />
+        </LinearLayout>
+    </RelativeLayout>
+
+    <ImageView
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:background="@mipmap/icon_more"
+        tools:ignore="ContentDescription,RtlHardcoded" />
+</RelativeLayout>
