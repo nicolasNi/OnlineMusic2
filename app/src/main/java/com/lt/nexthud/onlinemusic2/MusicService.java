@@ -98,6 +98,7 @@ public class MusicService extends Service {
         stop();
         player = MediaPlayer.create(MusicService.this, Uri
                 .parse(url));//实例化对象，通过播放本机服务器上的一首音乐
+
         player.setLooping(false);//设置不循环播放
 
         // 当player对象不为空并且player不是正在播放时

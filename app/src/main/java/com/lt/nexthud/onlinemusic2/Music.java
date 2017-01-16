@@ -18,6 +18,8 @@ public class Music implements Serializable {
     /** 歌曲id */
     private String musicId;
 
+    public int No;
+
 
     public Music(String musciName,String airtistName,String path, String albumName,String musicId)
     {
@@ -26,6 +28,10 @@ public class Music implements Serializable {
         this.path = path;
         this.albumName = albumName;
         this.musicId = musicId;
+    }
+
+    public Music()
+    {
     }
 
 

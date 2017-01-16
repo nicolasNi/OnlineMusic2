@@ -102,6 +102,13 @@
             android:id="@+id/imageButton4"
             android:onClick="click"/>
 
+        <Button
+            android:text="播放记录"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_toEndOf="@+id/imageButton4"
+            android:id="@+id/musicHistory" />
 
 
     </RelativeLayout>

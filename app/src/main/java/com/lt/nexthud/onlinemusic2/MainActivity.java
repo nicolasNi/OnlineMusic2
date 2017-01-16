@@ -1,9 +1,17 @@
 package com.lt.nexthud.onlinemusic2;
 
+import android.app.DownloadManager;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -11,6 +19,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.MimeTypeMap;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -18,6 +27,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,11 +40,26 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<HashMap<String, Object>> listItem = new ArrayList<HashMap<String,     Object>>();
     private MyAdapter adapter;
 
+    private SQLiteDatabase db;
+    private ListView listview;
+
+    private DownloadManager downloadManager;
+    private String downloadUrl;
+
+    private boolean displayMusicHistory=true;
+    private Button musicHistoryButton;
+
+    private MediaPlayer mediaPlayer;
+    private String downloadMusicPath;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        initialDB();
         init();
+
+        downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
     }
 
     private void init() {
@@ -49,19 +74,16 @@ public class MainActivity extends AppCompatActivity {
         btSearch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
-
+                displayMusicHistory=false;
                 dialog.show();// 进入加载状态，显示进度条
                 new Thread(new Runnable() {
-
                     @Override
                     public void run() {
                         SearchUtils.getIds(edtKey.getText().toString(),
                                 new OnLoadSearchFinishListener() {
 
                                     @Override
-                                    public void onLoadSucess(
-                                            List<Music> musicList) {
+                                    public void onLoadSucess(List<Music> musicList) {
                                         dialog.dismiss();// 加载完成，取消进度条
                                         Message msg = new Message();
                                         msg.what = 0;
@@ -77,14 +99,29 @@ public class MainActivity extends AppCompatActivity {
                                                 .show();
                                     }
                                 });
-
                     }
                 }).start();
-
-
             }
         });
 
+        musicHistoryButton = (Button)findViewById(R.id.musicHistory);
+        musicHistoryButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                displayMusicHistory=true;
+                displayMusicHistory();
+            }
+        });
+    }
+
+    private void displayMusicHistory()
+    {
+        downloadMusicPath = this.getPackageName()+"/myDownLoadMusic/";
+        Message msg = new Message();
+        msg.what = 0;
+        mHandler.sendMessage(msg);
+        listSearchResult = getMusicListFromDB();
+//        deleteTable();
     }
 
 
@@ -92,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
         public void handleMessage(android.os.Message msg) {
             switch (msg.what) {
                 case 0:
+                    listItem.clear();
                     for (int i =0; i<listSearchResult.size(); i++   )
                     {
                         HashMap<String, Object> map = new HashMap<String, Object>();
@@ -113,6 +151,12 @@ public class MainActivity extends AppCompatActivity {
     };
 
 
+    private void initialDB()
+    {
+        db = openOrCreateDatabase("test.db", Context.MODE_PRIVATE, null);
+        db.execSQL("CREATE TABLE if not exists music (_id INTEGER PRIMARY KEY AUTOINCREMENT, musciName VARCHAR,  airtistName VARCHAR,  albumName VARCHAR, No SMALLINT)");
+    }
+
     public void click(View v){
         Intent intent = new Intent(MainActivity.this, MusicService.class);//实例化一个Intent对象
         String[] param={"-1",""};
@@ -126,10 +170,26 @@ public class MainActivity extends AppCompatActivity {
                 op = 1;
                 break;
             case R.id.imageButton2://当点击播放按钮按钮时
-                op = 2;
-                param[0]="1";
-                param[1]="http://ws.stream.qqmusic.qq.com/C200001OyHbk2MSIi4.m4a?vkey=BC7D971169A6FF737840E77762959D1F5CC6B1753096CDC097C8D4C5D4198D7CCA13B64015888E39BDDFC8665488C9A78FA38A710A0B8C65&guid=7524721365&fromtag=30";
-                param[1]=url;
+                Music musicPlayed = listSearchResult.get(adapter.selectItem);
+                if(displayMusicHistory)
+                {
+                    File rootFile = android.os.Environment.getExternalStorageDirectory();
+                    File file = new File(rootFile.getPath()+ "/com.lt.nexthud.onlinemusic2/myDownLoadMusic/"+musicPlayed.getMusciName()+"-"+musicPlayed.getAirtistName()+"-"+musicPlayed.getAlbumName()+".m4a");
+                    url = file.getPath();
+                }
+//                else
+//                {
+                    op = 2;
+                    param[0]="1";
+                    param[1]="http://ws.stream.qqmusic.qq.com/C200001OyHbk2MSIi4.m4a?vkey=BC7D971169A6FF737840E77762959D1F5CC6B1753096CDC097C8D4C5D4198D7CCA13B64015888E39BDDFC8665488C9A78FA38A710A0B8C65&guid=7524721365&fromtag=30";
+                    param[1]=url;
+//                download(musicPlayed);
+                    if(!isExist(musicPlayed))
+                    {
+                        getANewSong(musicPlayed);
+                        download(musicPlayed);
+                    }
+//                }
                 break;
             case R.id.imageButton3://当点击暂停按钮时
                 op = 3;
@@ -149,7 +209,134 @@ public class MainActivity extends AppCompatActivity {
         bundle.putStringArray("param", param);
         intent.putExtras(bundle);//再把bundle对象放入intent对象中
         startService(intent);//开启这个服务
+
+
     }
+
+    private boolean isExist(Music music)
+    {
+        boolean exits=false;
+        Cursor c = db.rawQuery("SELECT * FROM music WHERE musciName = ? and airtistName = ? and albumName = ?", new String[]{music.getMusciName(), music.getAirtistName(), music.getAlbumName()});
+        while (c.moveToNext()) {
+            int No = c.getInt(c.getColumnIndex("No"));
+            if(No > 0)
+            {
+                exits = true;
+            }
+        }
+        return exits;
+    }
+
+    private void getANewSong(Music newMusic)
+    {
+        deletThe50thSong();
+        updateMusicList();
+        addTheNewSong(newMusic);
+
+    }
+
+    private void deletThe50thSong()
+    {
+        db.delete("music", "No = ?", new String[]{"50"});
+    }
+
+    private void updateMusicList()
+    {
+        Cursor cursor = db.rawQuery("select count(*)from music",null);
+//游标移到第一条记录准备获取数据
+        cursor.moveToFirst();
+// 获取数据中的LONG类型数据
+        int count = cursor.getInt(0);
+
+        for(int i =count; i>0;i--)
+        {
+            ContentValues cv = new ContentValues();
+            cv.put("No", i+1);
+            //更新数据
+            db.update("music", cv, "No = ?", new String[]{Integer.toString(i)});
+        }
+    }
+
+    private void addTheNewSong(Music newMusic)
+    {
+        newMusic.No = 1;
+        //插入数据
+        db.execSQL("INSERT INTO music VALUES (NULL, ?, ?, ? , ?)", new Object[]{newMusic.getMusciName(), newMusic.getAirtistName(), newMusic.getAlbumName(), newMusic.No});
+
+    }
+
+    protected void onPause() {
+        super.onPause();
+        unregisterReceiver(receiver);
+    }
+
+    private List<Music> getMusicListFromDB()
+    {
+        List<Music> musicList = new ArrayList<Music>();
+        Cursor c = db.rawQuery("SELECT * FROM music WHERE No >= ? ORDER BY No ASC", new String[]{"0"});
+        while (c.moveToNext()) {
+            int _id = c.getInt(c.getColumnIndex("_id"));
+            String musciName = c.getString(c.getColumnIndex("musciName"));
+            String airtistName = c.getString(c.getColumnIndex("airtistName"));
+            String albumName = c.getString(c.getColumnIndex("albumName"));
+            int No = c.getInt(c.getColumnIndex("No"));
+            String s = "No:" + No + ", 歌名:" + musciName + ", 歌手:" + airtistName +", 专辑:" + albumName;
+            Music music = new Music();
+            music.setMusciName(musciName);
+            music.setAirtistName(airtistName);
+            music.setAlbumName(albumName);
+            musicList.add(music);
+        }
+//        c.close();
+//        db.close();
+        return musicList;
+    }
+
+    private void download(Music downloadMusic)
+    {
+        downloadUrl = downloadMusic.getPath();
+        Uri resource = Uri.parse(downloadUrl);
+        DownloadManager.Request request = new DownloadManager.Request(
+                resource);
+        request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_MOBILE
+                | DownloadManager.Request.NETWORK_WIFI);
+        request.setAllowedOverRoaming(false);
+        // 设置文件类型
+        MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
+        String mimeString = mimeTypeMap
+                .getMimeTypeFromExtension(MimeTypeMap
+                        .getFileExtensionFromUrl(downloadUrl));
+        request.setMimeType(mimeString);
+        // // 在通知栏中隐藏,在小米miui中会出现安全异常
+        // request.setNotificationVisibility(View.GONE);
+        // request.setVisibleInDownloadsUi(false);
+
+        // 在通知栏中显示
+        request.setNotificationVisibility(View.VISIBLE);
+        request.setVisibleInDownloadsUi(true);
+        // sdcard的目录下的download文件夹
+        String musicName = downloadMusic.getMusciName()+"-"+downloadMusic.getAirtistName()+"-"+downloadMusic.getAlbumName()+".m4a";
+//        request.setDestinationInExternalPublicDir("/Download/", musicName);
+        request.setDestinationInExternalPublicDir(this.getPackageName()+"/myDownLoadMusic",musicName);
+        request.setTitle("新版本");
+        downloadManager.enqueue(request);
+        registerReceiver(receiver, new IntentFilter(
+                DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+    }
+
+    protected void onResume() {
+        super.onResume();
+    }
+
+    private void deleteTable()
+    {
+        db.execSQL("DROP TABLE IF EXISTS music");
+    }
+
+    private BroadcastReceiver receiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+        }
+    };
 
     //ViewHolder静态类
     static class ViewHolder
