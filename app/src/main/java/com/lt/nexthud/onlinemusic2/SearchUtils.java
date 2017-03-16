@@ -1,13 +1,23 @@
 package com.lt.nexthud.onlinemusic2;
 
+import android.annotation.SuppressLint;
+import android.os.StrictMode;
 import android.util.Log;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -20,7 +30,64 @@ import java.util.List;
  */
 
 public class SearchUtils {
+
+    public static String UUID_URL = "http://c.y.qq.com/base/fcgi-bin/fcg_musicexpress.fcg";
+
+    @SuppressLint("NewApi")
+    public static String getMusicKey(){
+        try {
+            StrictMode.ThreadPolicy policy=new StrictMode.ThreadPolicy.Builder().permitAll().build();
+
+            StrictMode.setThreadPolicy(policy);
+
+            HttpPost httpPost = new HttpPost(UUID_URL);
+
+            ArrayList<NameValuePair> params = new ArrayList <NameValuePair>();
+            params.add(new BasicNameValuePair("json", "3"));
+            params.add(new BasicNameValuePair("guid", "7524721365"));
+            httpPost.setEntity(new UrlEncodedFormEntity(params, org.apache.http.protocol.HTTP.UTF_8));
+
+            DefaultHttpClient httpClient = new DefaultHttpClient();
+            HttpResponse httpResponse = httpClient.execute(httpPost);
+            StringBuilder builder = new StringBuilder();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    httpResponse.getEntity().getContent()));
+            for (String s = reader.readLine(); s != null; s = reader.readLine()) {
+                builder.append(s);
+            }
+            String[] msgs= split(builder.toString(), ":");
+
+            String keyStr= msgs[ msgs.length-1];
+            keyStr=keyStr.replace("\"", "");
+            keyStr=keyStr.replace("});", "");
+            keyStr=keyStr.replace(" ", "");
+            Log.e("nexthud", "key:"+keyStr);
+            return keyStr;
+        } catch (Exception e) {
+            Log.e("nexthud", e.getMessage());
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return "";
+            // return false;
+        }
+    }
+
+    public static String[] split(String str, String splitsign) {
+        int index;
+        if (str == null || splitsign == null)
+            return null;
+        ArrayList al = new ArrayList();
+        while ((index = str.indexOf(splitsign)) != -1) {
+            al.add(str.substring(0, index));
+            str = str.substring(index + splitsign.length());
+        }
+        al.add(str);
+        return (String[]) al.toArray(new String[0]);
+    }
+
     public static void getIds(String input, OnLoadSearchFinishListener listener) {
+        String key=getMusicKey();
+
         HttpURLConnection connection = null;
         String result;
         try {
@@ -75,7 +142,7 @@ public class SearchUtils {
                         String f = music.getString("f");
                         String[] fForSongID = f.split("\\u007C");
                         String musicId = fForSongID[20];
-                        String path = "http://ws.stream.qqmusic.qq.com/C200"+musicId+".m4a?vkey=1E6C21E8CD90E9CF5CE3996213A6E29C21543A6FDA7145787DFA30FA84BF008BC6F759874C80589352FD5D245225C6C483E07F2550B6C938&guid=7524721365&fromtag=30";
+                        String path = "http://ws.stream.qqmusic.qq.com/C200"+musicId+".m4a?vkey="+key+"&guid=7524721365&fromtag=30";
                         musicList.add(new Music(musciName,airtistName,path,albumName,musicId));
                     }
                     ArrayList<HashMap<String, Object>> listItem = new ArrayList<HashMap<String,     Object>>();
