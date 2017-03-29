@@ -1,8 +1,6 @@
 package com.lt.nexthud.onlinemusic2;
 
 import android.annotation.SuppressLint;
-import android.os.StrictMode;
-import android.util.Log;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -14,7 +12,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -22,7 +19,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -36,10 +32,6 @@ public class SearchUtils {
     @SuppressLint("NewApi")
     public static String getMusicKey(){
         try {
-            StrictMode.ThreadPolicy policy=new StrictMode.ThreadPolicy.Builder().permitAll().build();
-
-            StrictMode.setThreadPolicy(policy);
-
             HttpPost httpPost = new HttpPost(UUID_URL);
 
             ArrayList<NameValuePair> params = new ArrayList <NameValuePair>();
@@ -61,14 +53,10 @@ public class SearchUtils {
             keyStr=keyStr.replace("\"", "");
             keyStr=keyStr.replace("});", "");
             keyStr=keyStr.replace(" ", "");
-            Log.e("nexthud", "key:"+keyStr);
             return keyStr;
         } catch (Exception e) {
-            Log.e("nexthud", e.getMessage());
-            // TODO Auto-generated catch block
             e.printStackTrace();
             return "";
-            // return false;
         }
     }
 
@@ -97,29 +85,21 @@ public class SearchUtils {
             URL url = new URL(s);
 
             connection = (HttpURLConnection) url.openConnection();
-            // 设置请求方法，默认是GET
             connection.setRequestMethod("GET");
-            // 设置字符集
             connection.setRequestProperty("Charset", "UTF-8");
-            // 设置文件类型
             connection.setRequestProperty("Content-Type", "text/xml; charset=UTF-8");
-            // 设置请求参数，可通过Servlet的getHeader()获取
-            connection.setRequestProperty("Cookie", "AppName=" + URLEncoder.encode("你好", "UTF-8"));
-            // 设置自定义参数
-            connection.setRequestProperty("MyProperty", "this is me!");
 
             if(connection.getResponseCode() == 200){
                 InputStream is = connection.getInputStream();
-                ByteArrayOutputStream baos=new ByteArrayOutputStream();
-                byte[] buff=new byte[1024];
-                int len=-1;
-                while((len=is.read(buff))!=-1){
-                    baos.write(buff, 0, len);
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(is));
+                StringBuilder stringBuilder = new StringBuilder();
+                String lineOfResult="";
+                while ((lineOfResult = bufferedReader.readLine()) != null)
+                {
+                    stringBuilder.append(lineOfResult);
                 }
                 is.close();
-                String html=baos.toString();
-                baos.close();
-                result = html;
+                result = stringBuilder.toString();
 
                 try{
                     JSONObject dataJson = new JSONObject(result);
@@ -145,20 +125,12 @@ public class SearchUtils {
                         String path = "http://ws.stream.qqmusic.qq.com/C200"+musicId+".m4a?vkey="+key+"&guid=7524721365&fromtag=30";
                         musicList.add(new Music(musciName,airtistName,path,albumName,musicId));
                     }
-                    ArrayList<HashMap<String, Object>> listItem = new ArrayList<HashMap<String,     Object>>();
-                    for(int i=0;i<10;i++)
-                    {
-                        HashMap<String, Object> map = new HashMap<String, Object>();
-                        map.put("tv_search_list_title", "第"+i+"行");
-                        map.put("tv_search_list_airtist", "这是第"+i+"行");
-                        listItem.add(map);
-                    }
                     listener.onLoadSucess(musicList);
                 }
                 catch (Exception e)
                 {
-                    Log.e("1","2",e);
-                };
+                    e.printStackTrace();
+                }
             }
         } catch (IOException e) {
             // TODO Auto-generated catch block

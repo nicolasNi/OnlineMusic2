@@ -39,17 +39,15 @@ public class MainActivity extends Activity {
     private List<Music> listSearchResult;
     private ArrayList<HashMap<String, Object>> listItem = new ArrayList<HashMap<String, Object>>();
     private MyAdapter adapter;
-
     private SQLiteDatabase db;
-
     private DownloadManager downloadManager;
     private String downloadUrl;
-
     private boolean displayMusicHistory = true;
     private Button musicHistoryButton;
-
     private MediaPlayer mediaPlayer;
     private String downloadMusicPath;
+    private MusicDBHelper musicDBHelper;
+    private static final int REFLASH_BY_SEARCH_RESULT = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,7 +55,6 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         initialDB();
         init();
-
         downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
     }
 
@@ -84,7 +81,7 @@ public class MainActivity extends Activity {
                                     public void onLoadSucess(List<Music> musicList) {
                                         dialog.dismiss();// 加载完成，取消进度条
                                         Message msg = new Message();
-                                        msg.what = 0;
+                                        msg.what = REFLASH_BY_SEARCH_RESULT;
                                         listSearchResult = musicList;
                                         mHandler.sendMessage(msg);
                                     }
@@ -123,7 +120,7 @@ public class MainActivity extends Activity {
     private Handler mHandler = new Handler() {
         public void handleMessage(android.os.Message msg) {
         switch (msg.what) {
-            case 0:
+            case REFLASH_BY_SEARCH_RESULT:
                 listItem.clear();
                 for (int i = 0; i < listSearchResult.size(); i++) {
                     HashMap<String, Object> map = new HashMap<String, Object>();
@@ -143,8 +140,8 @@ public class MainActivity extends Activity {
 
 
     private void initialDB() {
-        db = openOrCreateDatabase("test.db", Context.MODE_PRIVATE, null);
-        db.execSQL("CREATE TABLE if not exists music (_id INTEGER PRIMARY KEY AUTOINCREMENT, musciName VARCHAR,  airtistName VARCHAR,  albumName VARCHAR, No SMALLINT)");
+        musicDBHelper = new MusicDBHelper(this,"hud.db",null,1);
+        db = musicDBHelper.getWritableDatabase();
     }
 
     public void click(View v) {
@@ -200,13 +197,25 @@ public class MainActivity extends Activity {
 
     private boolean isExist(Music music) {
         boolean exits = false;
-        Cursor c = db.rawQuery("SELECT * FROM music WHERE musciName = ? and airtistName = ? and albumName = ?", new String[]{music.getMusciName(), music.getAirtistName(), music.getAlbumName()});
-        while (c.moveToNext()) {
-            int No = c.getInt(c.getColumnIndex("No"));
-            if (No > 0) {
-                exits = true;
+        Cursor cursor = db.query("music",null,"musciName = ? and airtistName = ? and albumName = ?",new String[]{music.getMusciName(), music.getAirtistName(), music.getAlbumName()},null,null,null);
+//        Cursor c = db.rawQuery("SELECT * FROM music WHERE musciName = ? and airtistName = ? and albumName = ?", new String[]{music.getMusciName(), music.getAirtistName(), music.getAlbumName()});
+        if(cursor.moveToFirst())
+        {
+            do{
+                int No = cursor.getInt(cursor.getColumnIndex("No"));
+                if (No > 0) {
+                    exits = true;
+                    break;
+                }
             }
+            while (cursor.moveToNext());
         }
+//        while (c.moveToNext()) {
+//            int No = c.getInt(c.getColumnIndex("No"));
+//            if (No > 0) {
+//                exits = true;
+//            }
+//        }
         return exits;
     }
 
@@ -214,7 +223,6 @@ public class MainActivity extends Activity {
         deletThe50thSong();
         updateMusicList();
         addTheNewSong(newMusic);
-
     }
 
     private void deletThe50thSong() {
@@ -239,8 +247,13 @@ public class MainActivity extends Activity {
     private void addTheNewSong(Music newMusic) {
         newMusic.No = 1;
         //插入数据
-        db.execSQL("INSERT INTO music VALUES (NULL, ?, ?, ? , ?)", new Object[]{newMusic.getMusciName(), newMusic.getAirtistName(), newMusic.getAlbumName(), newMusic.No});
-
+        ContentValues contentValues = new ContentValues();
+        contentValues.put("musciName",newMusic.getMusciName());
+        contentValues.put("airtistName",newMusic.getAirtistName());
+        contentValues.put("albumName",newMusic.getAlbumName());
+        contentValues.put("No",newMusic.No);
+        db.insert("music",null,contentValues);
+//        db.execSQL("INSERT INTO music VALUES (NULL, ?, ?, ? , ?)", new Object[]{newMusic.getMusciName(), newMusic.getAirtistName(), newMusic.getAlbumName(), newMusic.No});
     }
 
     private List<Music> getMusicListFromDB() {
@@ -294,7 +307,6 @@ public class MainActivity extends Activity {
         registerReceiver(receiver, new IntentFilter(
                 DownloadManager.ACTION_DOWNLOAD_COMPLETE));
     }
-
 
     private void deleteTable() {
         db.execSQL("DROP TABLE IF EXISTS music");
