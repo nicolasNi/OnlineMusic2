@@ -3,28 +3,20 @@ package com.lt.nexthud.onlinemusic2;
 import android.app.Activity;
 import android.app.DownloadManager;
 import android.app.ProgressDialog;
-import android.content.BroadcastReceiver;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.webkit.MimeTypeMap;
-import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
@@ -129,7 +121,7 @@ public class MainActivity extends Activity {
                     listItem.add(map);
                 }
 
-                adapter = new MyAdapter(MainActivity.this);
+                adapter = new MyAdapter(MainActivity.this, R.layout.item_online_search_list,listItem);
                 lvSearchReasult.setAdapter(adapter);
                 break;
         }
@@ -165,7 +157,6 @@ public class MainActivity extends Activity {
                 }
                 op = 2;
                 param[0] = "1";
-                param[1] = "http://ws.stream.qqmusic.qq.com/C200001OyHbk2MSIi4.m4a?vkey=BC7D971169A6FF737840E77762959D1F5CC6B1753096CDC097C8D4C5D4198D7CCA13B64015888E39BDDFC8665488C9A78FA38A710A0B8C65&guid=7524721365&fromtag=30";
                 param[1] = url;
 //                download(musicPlayed);
                 if (!isExist(musicPlayed)) {
@@ -191,14 +182,11 @@ public class MainActivity extends Activity {
         bundle.putStringArray("param", param);
         intent.putExtras(bundle);//再把bundle对象放入intent对象中
         startService(intent);//开启这个服务
-
-
     }
 
     private boolean isExist(Music music) {
         boolean exits = false;
         Cursor cursor = db.query("music",null,"musciName = ? and airtistName = ? and albumName = ?",new String[]{music.getMusciName(), music.getAirtistName(), music.getAlbumName()},null,null,null);
-//        Cursor c = db.rawQuery("SELECT * FROM music WHERE musciName = ? and airtistName = ? and albumName = ?", new String[]{music.getMusciName(), music.getAirtistName(), music.getAlbumName()});
         if(cursor.moveToFirst())
         {
             do{
@@ -210,12 +198,6 @@ public class MainActivity extends Activity {
             }
             while (cursor.moveToNext());
         }
-//        while (c.moveToNext()) {
-//            int No = c.getInt(c.getColumnIndex("No"));
-//            if (No > 0) {
-//                exits = true;
-//            }
-//        }
         return exits;
     }
 
@@ -231,15 +213,14 @@ public class MainActivity extends Activity {
 
     private void updateMusicList() {
         Cursor cursor = db.rawQuery("select count(*)from music", null);
-//游标移到第一条记录准备获取数据
+        //游标移到第一条记录准备获取数据
         cursor.moveToFirst();
-// 获取数据中的LONG类型数据
+        // 获取数据中的LONG类型数据
         int count = cursor.getInt(0);
 
         for (int i = count; i > 0; i--) {
             ContentValues cv = new ContentValues();
             cv.put("No", i + 1);
-            //更新数据
             db.update("music", cv, "No = ?", new String[]{Integer.toString(i)});
         }
     }
@@ -253,7 +234,6 @@ public class MainActivity extends Activity {
         contentValues.put("albumName",newMusic.getAlbumName());
         contentValues.put("No",newMusic.No);
         db.insert("music",null,contentValues);
-//        db.execSQL("INSERT INTO music VALUES (NULL, ?, ?, ? , ?)", new Object[]{newMusic.getMusciName(), newMusic.getAirtistName(), newMusic.getAlbumName(), newMusic.No});
     }
 
     private List<Music> getMusicListFromDB() {
@@ -272,8 +252,6 @@ public class MainActivity extends Activity {
             music.setAlbumName(albumName);
             musicList.add(music);
         }
-//        c.close();
-//        db.close();
         return musicList;
     }
 
@@ -304,101 +282,9 @@ public class MainActivity extends Activity {
         request.setDestinationInExternalPublicDir(this.getPackageName() + "/myDownLoadMusic", musicName);
         request.setTitle("新版本");
         downloadManager.enqueue(request);
-        registerReceiver(receiver, new IntentFilter(
-                DownloadManager.ACTION_DOWNLOAD_COMPLETE));
     }
 
     private void deleteTable() {
         db.execSQL("DROP TABLE IF EXISTS music");
     }
-
-    protected void onPause() {
-        super.onPause();
-        unregisterReceiver(receiver);
-    }
-
-    protected void onResume() {
-        super.onResume();
-    }
-
-    private BroadcastReceiver receiver = new BroadcastReceiver() {
-        public void onReceive(Context context, Intent intent) {
-        }
-    };
-
-    //ViewHolder静态类
-    static class ViewHolder {
-        public TextView tv_search_list_title;
-        public TextView tv_search_list_airtist;
-    }
-
-    public class MyAdapter extends BaseAdapter {
-        private LayoutInflater mInflater = null;
-        private int currentItemIndex = 0;
-
-        private MyAdapter(Context context) {
-            //根据context上下文加载布局，这里的是Demo17Activity本身，即this
-            this.mInflater = LayoutInflater.from(context);
-        }
-
-        @Override
-        public int getCount() {
-            //How many items are in the data set represented by this Adapter.
-            //在此适配器中所代表的数据集中的条目数
-            return listItem.size();
-        }
-
-        @Override
-        public Object getItem(int position) {
-            // Get the data item associated with the specified position in the data set.
-            //获取数据集中与指定索引对应的数据项
-            return position;
-        }
-
-        @Override
-        public long getItemId(int position) {
-            //Get the row id associated with the specified position in the list.
-            //获取在列表中与指定索引对应的行id
-            return position;
-        }
-
-        //Get a View that displays the data at the specified position in the data set.
-        //获取一个在数据集中指定索引的视图来显示数据
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            ViewHolder holder = null;
-            //如果缓存convertView为空，则需要创建View
-            if (convertView == null) {
-                holder = new ViewHolder();
-                //根据自定义的Item布局加载布局
-                convertView = mInflater.inflate(R.layout.item_online_search_list, null);
-                holder.tv_search_list_title = (TextView) convertView.findViewById(R.id.tv_search_list_title);
-                holder.tv_search_list_airtist = (TextView) convertView.findViewById(R.id.tv_search_list_airtist);
-                //将设置好的布局保存到缓存中，并将其设置在Tag里，以便后面方便取出Tag
-                convertView.setTag(holder);
-            } else {
-                holder = (ViewHolder) convertView.getTag();
-            }
-            holder.tv_search_list_title.setText((String) listItem.get(position).get("tv_search_list_title"));
-            holder.tv_search_list_airtist.setText((String) listItem.get(position).get("tv_search_list_airtist"));
-
-
-            if (position == selectItem) {
-                convertView.setBackgroundColor(Color.CYAN);
-            } else {
-                convertView.setBackgroundColor(Color.TRANSPARENT);
-            }
-
-            return convertView;
-        }
-
-        public void setSelectItem(int selectItem) {
-            this.selectItem = selectItem;
-        }
-
-        private int selectItem = 0;
-
-    }
-
-
 }
