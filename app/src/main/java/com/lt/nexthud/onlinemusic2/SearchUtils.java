@@ -73,7 +73,7 @@ public class SearchUtils {
         return (String[]) al.toArray(new String[0]);
     }
 
-    public static void getIds(String input, OnLoadSearchFinishListener listener) {
+    public static void getMusics(String input, OnLoadSearchFinishListener listener) {
         String key=getMusicKey();
 
         HttpURLConnection connection = null;

@@ -3,14 +3,16 @@ package com.lt.nexthud.onlinemusic2;
 import android.app.Activity;
 import android.app.DownloadManager;
 import android.app.ProgressDialog;
+import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.view.View;
 import android.webkit.MimeTypeMap;
@@ -36,10 +38,10 @@ public class MainActivity extends Activity {
     private String downloadUrl;
     private boolean displayMusicHistory = true;
     private Button musicHistoryButton;
-    private MediaPlayer mediaPlayer;
     private String downloadMusicPath;
     private MusicDBHelper musicDBHelper;
     private static final int REFLASH_BY_SEARCH_RESULT = 0;
+    private MusicService.ControlMusicBinder musicBinder;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,7 +49,6 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         initialDB();
         init();
-        downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
     }
 
     private void init() {
@@ -58,6 +59,7 @@ public class MainActivity extends Activity {
         lvSearchReasult.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
         Button btSearch = (Button) findViewById(R.id.bt_online_search);
         final EditText edtKey = (EditText) findViewById(R.id.edt_search);
+        downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
 
         btSearch.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -67,7 +69,7 @@ public class MainActivity extends Activity {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        SearchUtils.getIds(edtKey.getText().toString(),
+                        SearchUtils.getMusics(edtKey.getText().toString(),
                                 new OnLoadSearchFinishListener() {
                                     @Override
                                     public void onLoadSucess(List<Music> musicList) {
@@ -97,17 +99,19 @@ public class MainActivity extends Activity {
                 displayMusicHistory();
             }
         });
+
+        Intent musicServiceIntent = new Intent(this,MusicService.class);
+        bindService(musicServiceIntent,musicServiceConnection,BIND_AUTO_CREATE);
     }
 
     private void displayMusicHistory() {
         downloadMusicPath = this.getPackageName() + "/myDownLoadMusic/";
         Message msg = new Message();
         msg.what = 0;
-        mHandler.sendMessage(msg);
         listSearchResult = getMusicListFromDB();
+        mHandler.sendMessage(msg);
 //        deleteTable();
     }
-
 
     private Handler mHandler = new Handler() {
         public void handleMessage(android.os.Message msg) {
@@ -120,14 +124,11 @@ public class MainActivity extends Activity {
                     map.put("tv_search_list_airtist", listSearchResult.get(i).getAirtistName() + "   《" + listSearchResult.get(i).getAlbumName() + "》");
                     listItem.add(map);
                 }
-
                 adapter = new MyAdapter(MainActivity.this, R.layout.item_online_search_list,listItem);
                 lvSearchReasult.setAdapter(adapter);
                 break;
         }
         }
-
-        ;
     };
 
 
@@ -137,16 +138,11 @@ public class MainActivity extends Activity {
     }
 
     public void click(View v) {
-        Intent intent = new Intent(MainActivity.this, MusicService.class);//实例化一个Intent对象
-        String[] param = {"-1", ""};
-        int op = -1;//设置中间变量op
         String url = listSearchResult.get(adapter.selectItem).getPath();
         switch (v.getId()) {
             case R.id.imageButton://当点击的为上一首按钮时
                 adapter.selectItem -= 1;
-                adapter.setSelectItem(adapter.selectItem);
-                adapter.notifyDataSetInvalidated();
-                op = 1;
+                adapter.notifyDataSetChanged();
                 break;
             case R.id.imageButton2://当点击播放按钮按钮时
                 Music musicPlayed = listSearchResult.get(adapter.selectItem);
@@ -155,33 +151,23 @@ public class MainActivity extends Activity {
                     File file = new File(rootFile.getPath() + "/com.lt.nexthud.onlinemusic2/myDownLoadMusic/" + musicPlayed.getMusciName() + "-" + musicPlayed.getAirtistName() + "-" + musicPlayed.getAlbumName() + ".m4a");
                     url = file.getPath();
                 }
-                op = 2;
-                param[0] = "1";
-                param[1] = url;
 //                download(musicPlayed);
                 if (!isExist(musicPlayed)) {
                     getANewSong(musicPlayed);
                     download(musicPlayed);
                 }
+                musicBinder.playMusic(url);
                 break;
             case R.id.imageButton3://当点击暂停按钮时
-                op = 3;
-                param[0] = "2";
+                musicBinder.pauseMusic();
                 break;
             case R.id.imageButton4://当点击下一首按钮
                 adapter.selectItem += 1;
-                adapter.setSelectItem(adapter.selectItem);
-                adapter.notifyDataSetInvalidated();
+                adapter.notifyDataSetChanged();
                 break;
             default:
                 break;
         }
-
-        Bundle bundle = new Bundle();//实例化一个Bundle对象
-        bundle.putInt("msg", op);//把op的值放入到bundle对象中
-        bundle.putStringArray("param", param);
-        intent.putExtras(bundle);//再把bundle对象放入intent对象中
-        startService(intent);//开启这个服务
     }
 
     private boolean isExist(Music music) {
@@ -238,53 +224,62 @@ public class MainActivity extends Activity {
 
     private List<Music> getMusicListFromDB() {
         List<Music> musicList = new ArrayList<Music>();
-        Cursor c = db.rawQuery("SELECT * FROM music WHERE No >= ? ORDER BY No ASC", new String[]{"0"});
-        while (c.moveToNext()) {
-            int _id = c.getInt(c.getColumnIndex("_id"));
-            String musciName = c.getString(c.getColumnIndex("musciName"));
-            String airtistName = c.getString(c.getColumnIndex("airtistName"));
-            String albumName = c.getString(c.getColumnIndex("albumName"));
-            int No = c.getInt(c.getColumnIndex("No"));
-            String s = "No:" + No + ", 歌名:" + musciName + ", 歌手:" + airtistName + ", 专辑:" + albumName;
-            Music music = new Music();
-            music.setMusciName(musciName);
-            music.setAirtistName(airtistName);
-            music.setAlbumName(albumName);
-            musicList.add(music);
+        Cursor cursor = db.query("music",null,null,null,null,null,"No ASC");
+        if(cursor.moveToFirst()){
+            do{
+                String musciName = cursor.getString(cursor.getColumnIndex("musciName"));
+                String airtistName = cursor.getString(cursor.getColumnIndex("airtistName"));
+                String albumName = cursor.getString(cursor.getColumnIndex("albumName"));
+                Music music = new Music();
+                music.setMusciName(musciName);
+                music.setAirtistName(airtistName);
+                music.setAlbumName(albumName);
+                musicList.add(music);
+            }
+            while (cursor.moveToNext());
         }
         return musicList;
     }
 
-    private void download(Music downloadMusic) {
-        downloadUrl = downloadMusic.getPath();
-        Uri resource = Uri.parse(downloadUrl);
-        DownloadManager.Request request = new DownloadManager.Request(
-                resource);
-        request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_MOBILE
-                | DownloadManager.Request.NETWORK_WIFI);
-        request.setAllowedOverRoaming(false);
-        // 设置文件类型
-        MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
-        String mimeString = mimeTypeMap
-                .getMimeTypeFromExtension(MimeTypeMap
-                        .getFileExtensionFromUrl(downloadUrl));
-        request.setMimeType(mimeString);
-        // // 在通知栏中隐藏,在小米miui中会出现安全异常
-        // request.setNotificationVisibility(View.GONE);
-        // request.setVisibleInDownloadsUi(false);
+    private void download(final Music downloadMusic) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                downloadUrl = downloadMusic.getPath();
+                Uri resource = Uri.parse(downloadUrl);
+                DownloadManager.Request request = new DownloadManager.Request(resource);
+                request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_MOBILE | DownloadManager.Request.NETWORK_WIFI);
+                request.setAllowedOverRoaming(true);
+                // 设置文件类型
+                MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
+                String mimeString = mimeTypeMap
+                        .getMimeTypeFromExtension(MimeTypeMap
+                                .getFileExtensionFromUrl(downloadUrl));
+                request.setMimeType(mimeString);
 
-        // 在通知栏中显示
-        request.setNotificationVisibility(View.VISIBLE);
-        request.setVisibleInDownloadsUi(true);
-        // sdcard的目录下的download文件夹
-        String musicName = downloadMusic.getMusciName() + "-" + downloadMusic.getAirtistName() + "-" + downloadMusic.getAlbumName() + ".m4a";
-//        request.setDestinationInExternalPublicDir("/Download/", musicName);
-        request.setDestinationInExternalPublicDir(this.getPackageName() + "/myDownLoadMusic", musicName);
-        request.setTitle("新版本");
-        downloadManager.enqueue(request);
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN);
+                request.setVisibleInDownloadsUi(false);
+                // sdcard的目录下的download文件夹
+                String musicName = downloadMusic.getMusciName() + "-" + downloadMusic.getAirtistName() + "-" + downloadMusic.getAlbumName() + ".m4a";
+                request.setDestinationInExternalPublicDir(MainActivity.this.getPackageName() + "/myDownLoadMusic", musicName);
+                downloadManager.enqueue(request);
+            }
+        }).start();
     }
 
     private void deleteTable() {
         db.execSQL("DROP TABLE IF EXISTS music");
     }
+
+    private ServiceConnection musicServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            musicBinder = (MusicService.ControlMusicBinder)service;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
+        }
+    };
 }
