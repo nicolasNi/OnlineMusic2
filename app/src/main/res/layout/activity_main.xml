@@ -58,37 +58,26 @@
             android:layout_height="wrap_content"
             android:src="@android:drawable/ic_media_previous"
             android:id="@+id/imageButton"
-            android:layout_alignParentTop="true"
-            android:layout_toLeftOf="@+id/imageButton2"
-            android:layout_marginEnd="6dp"
             android:onClick="click"
-            />
+            android:layout_alignParentTop="true"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="18dp" />
 
         <ImageButton
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@android:drawable/ic_media_play"
-            android:layout_toLeftOf="@+id/button"
+            android:layout_toRightOf="@+id/imageButton"
             android:layout_marginEnd="3dp"
             android:id="@+id/imageButton2"
             android:onClick="click"/>
 
-        <Button
-            android:text="Button"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_centerInParent="true"
-            android:layout_centerHorizontal="true"
-            android:layout_centerVertical="true"
-            android:id="@+id/button"
-            android:visibility="invisible"/>
 
         <ImageButton
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@android:drawable/ic_media_pause"
-            android:layout_toRightOf="@+id/button"
+            android:layout_toRightOf="@+id/imageButton2"
             android:layout_marginStart="3dp"
             android:id="@+id/imageButton3"
             android:onClick="click"/>
@@ -109,6 +98,8 @@
             android:layout_alignParentBottom="true"
             android:layout_toEndOf="@+id/imageButton4"
             android:id="@+id/musicHistory" />
+
+
 
     </RelativeLayout>
 

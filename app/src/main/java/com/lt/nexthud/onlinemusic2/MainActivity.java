@@ -38,7 +38,6 @@ public class MainActivity extends Activity {
     private String downloadUrl;
     private boolean displayMusicHistory = true;
     private Button musicHistoryButton;
-    private String downloadMusicPath;
     private MusicDBHelper musicDBHelper;
     private static final int REFLASH_BY_SEARCH_RESULT = 0;
     private MusicService.ControlMusicBinder musicBinder;
@@ -105,7 +104,6 @@ public class MainActivity extends Activity {
     }
 
     private void displayMusicHistory() {
-        downloadMusicPath = this.getPackageName() + "/myDownLoadMusic/";
         Message msg = new Message();
         msg.what = 0;
         listSearchResult = getMusicListFromDB();
@@ -188,9 +186,24 @@ public class MainActivity extends Activity {
     }
 
     private void getANewSong(Music newMusic) {
+        deleteThe50thMusicFromFolder();
         deletThe50thSong();
         updateMusicList();
         addTheNewSong(newMusic);
+    }
+
+    private void deleteThe50thMusicFromFolder(){
+        Cursor cursor = db.query("music",null,"No = ?",new String[]{"50"},null,null,null);
+        if(cursor.moveToFirst()){
+            String musicName = cursor.getString(cursor.getColumnIndex("musciName"));
+            String airtistName = cursor.getString(cursor.getColumnIndex("airtistName"));
+            String albumName = cursor.getString(cursor.getColumnIndex("albumName"));
+            File rootFile = android.os.Environment.getExternalStorageDirectory();
+            File file = new File(rootFile.getPath() + "/com.lt.nexthud.onlinemusic2/myDownLoadMusic/" +musicName + "-" + airtistName + "-" + albumName + ".m4a");
+            if(file.isFile()){
+                file.delete();
+            }
+        }
     }
 
     private void deletThe50thSong() {
