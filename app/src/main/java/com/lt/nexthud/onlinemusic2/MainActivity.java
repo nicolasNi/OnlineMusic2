@@ -21,6 +21,10 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -94,8 +98,33 @@ public class MainActivity extends Activity {
         musicHistoryButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                displayMusicHistory = true;
-                displayMusicHistory();
+//                displayMusicHistory = true;
+//                displayMusicHistory();
+
+//                TestVolley testVolley = new TestVolley();
+//                testVolley.test(MainActivity.this);
+
+                StringRequest stringRequest = new StringRequest("https://www.baidu.com",
+                        new Response.Listener<String>(){
+                            @Override
+                            public void onResponse(String response) {
+                                Toast.makeText(MainActivity.this,response,Toast.LENGTH_SHORT).show();
+                            }
+                        },
+                        new Response.ErrorListener(){
+                            @Override
+                            public void onErrorResponse(VolleyError volleyError) {
+                                Toast.makeText(MainActivity.this,volleyError.toString(),Toast.LENGTH_SHORT).show();
+                            }
+                        });
+
+                VolleySingleton volleySingleton = VolleySingleton.getInstance(MainActivity.this);
+                VolleySingleton volleySingleton1 = VolleySingleton.getInstance(getApplicationContext());
+                if(volleySingleton == volleySingleton1)
+                {
+                    Toast.makeText(MainActivity.this,"hhhhh",Toast.LENGTH_SHORT).show();
+                }
+//                volleySingleton.addToRequestQueue(stringRequest);
             }
         });
 
