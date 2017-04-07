@@ -11,18 +11,14 @@ import com.android.volley.toolbox.Volley;
  */
 
 public class VolleySingleton {
-    private static VolleySingleton volleySingleton;
+    private static final VolleySingleton volleySingleton = new VolleySingleton();
     private RequestQueue mRequestQueue;
-    private Context mContext;
-    private VolleySingleton(Context context){
-        mContext = context;
+    private static Context mContext;
+    private VolleySingleton(){
     }
 
-    public static synchronized VolleySingleton getInstance(Context context){
-        if(volleySingleton == null)
-        {
-            volleySingleton = new VolleySingleton(context);
-        }
+    public static VolleySingleton getInstance(Context context){
+        mContext = context;
         return volleySingleton;
     }
 
@@ -34,7 +30,7 @@ public class VolleySingleton {
         return mRequestQueue;
     }
 
-    public void addToRequestQueue(Request request)
+    public <T> void addToRequestQueue(Request<T> request)
     {
         getmRequestQueue().add(request);
     }

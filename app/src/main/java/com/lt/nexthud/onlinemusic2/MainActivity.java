@@ -21,10 +21,6 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,6 +41,7 @@ public class MainActivity extends Activity {
     private MusicDBHelper musicDBHelper;
     private static final int REFLASH_BY_SEARCH_RESULT = 0;
     private MusicService.ControlMusicBinder musicBinder;
+    private SearchUtils searchUtils;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +52,7 @@ public class MainActivity extends Activity {
     }
 
     private void init() {
+        searchUtils = new SearchUtils(MainActivity.this);
         listSearchResult = new ArrayList<Music>();
         dialog = new ProgressDialog(this);
         dialog.setTitle("加载中。。。");
@@ -72,7 +70,7 @@ public class MainActivity extends Activity {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        SearchUtils.getMusics(edtKey.getText().toString(),
+                        searchUtils.getMusics(edtKey.getText().toString(),
                                 new OnLoadSearchFinishListener() {
                                     @Override
                                     public void onLoadSucess(List<Music> musicList) {
@@ -98,33 +96,8 @@ public class MainActivity extends Activity {
         musicHistoryButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-//                displayMusicHistory = true;
-//                displayMusicHistory();
-
-//                TestVolley testVolley = new TestVolley();
-//                testVolley.test(MainActivity.this);
-
-                StringRequest stringRequest = new StringRequest("https://www.baidu.com",
-                        new Response.Listener<String>(){
-                            @Override
-                            public void onResponse(String response) {
-                                Toast.makeText(MainActivity.this,response,Toast.LENGTH_SHORT).show();
-                            }
-                        },
-                        new Response.ErrorListener(){
-                            @Override
-                            public void onErrorResponse(VolleyError volleyError) {
-                                Toast.makeText(MainActivity.this,volleyError.toString(),Toast.LENGTH_SHORT).show();
-                            }
-                        });
-
-                VolleySingleton volleySingleton = VolleySingleton.getInstance(MainActivity.this);
-                VolleySingleton volleySingleton1 = VolleySingleton.getInstance(getApplicationContext());
-                if(volleySingleton == volleySingleton1)
-                {
-                    Toast.makeText(MainActivity.this,"hhhhh",Toast.LENGTH_SHORT).show();
-                }
-//                volleySingleton.addToRequestQueue(stringRequest);
+                displayMusicHistory = true;
+                displayMusicHistory();
             }
         });
 
@@ -178,7 +151,6 @@ public class MainActivity extends Activity {
                     File file = new File(rootFile.getPath() + "/com.lt.nexthud.onlinemusic2/myDownLoadMusic/" + musicPlayed.getMusciName() + "-" + musicPlayed.getAirtistName() + "-" + musicPlayed.getAlbumName() + ".m4a");
                     url = file.getPath();
                 }
-//                download(musicPlayed);
                 if (!isExist(musicPlayed)) {
                     getANewSong(musicPlayed);
                     download(musicPlayed);
